@@ -178,7 +178,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                   center: const Alignment(-0.6, -1.0),
                   radius: 1.2,
                   colors: [
-                    AppTheme.greenPrimary.withOpacity(0.12),
+                    AppTheme.greenPrimary.withValues(alpha: 0.12),
                     Colors.transparent,
                   ],
                 ),
@@ -193,7 +193,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                   center: const Alignment(0.7, 1.0),
                   radius: 1.0,
                   colors: [
-                    AppTheme.greenDark.withOpacity(0.07),
+                    AppTheme.greenDark.withValues(alpha: 0.07),
                     Colors.transparent,
                   ],
                 ),
@@ -220,7 +220,7 @@ class _DashboardScreenState extends State<DashboardScreen>
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: AppTheme.greenPrimary.withOpacity(0.35),
+                  color: AppTheme.greenPrimary.withValues(alpha: 0.35),
                   blurRadius: 20,
                   offset: const Offset(0, 4),
                 ),
@@ -268,8 +268,8 @@ class _DashboardScreenState extends State<DashboardScreen>
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
             decoration: BoxDecoration(
-              color: AppTheme.greenPrimary.withOpacity(0.10),
-              border: Border.all(color: AppTheme.greenPrimary.withOpacity(0.20)),
+              color: AppTheme.greenPrimary.withValues(alpha: 0.10),
+              border: Border.all(color: AppTheme.greenPrimary.withValues(alpha: 0.20)),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Row(
@@ -470,7 +470,7 @@ class _DashboardScreenState extends State<DashboardScreen>
               borderRadius: BorderRadius.circular(14),
               boxShadow: [
                 BoxShadow(
-                  color: AppTheme.greenPrimary.withOpacity(0.35),
+                  color: AppTheme.greenPrimary.withValues(alpha: 0.35),
                   blurRadius: 24,
                   offset: const Offset(0, 4),
                 ),
@@ -532,8 +532,8 @@ class _DashboardScreenState extends State<DashboardScreen>
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: AppTheme.redDanger.withOpacity(0.08),
-          border: Border.all(color: AppTheme.redDanger.withOpacity(0.25)),
+          color: AppTheme.redDanger.withValues(alpha: 0.08),
+          border: Border.all(color: AppTheme.redDanger.withValues(alpha: 0.25)),
           borderRadius: BorderRadius.circular(18),
         ),
         child: Column(
@@ -623,7 +623,7 @@ class _DashboardScreenState extends State<DashboardScreen>
         );
       },
       child: AppTheme.glassContainer(
-        borderColor: isFirst ? AppTheme.greenPrimary.withOpacity(0.40) : null,
+        borderColor: isFirst ? AppTheme.greenPrimary.withValues(alpha: 0.40) : null,
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
         child: Column(
           children: [
@@ -633,7 +633,7 @@ class _DashboardScreenState extends State<DashboardScreen>
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: isFirst ? AppTheme.greenPrimary.withOpacity(0.15) : const Color(0x0FFFFFFF),
+                  color: isFirst ? AppTheme.greenPrimary.withValues(alpha: 0.15) : const Color(0x0FFFFFFF),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
@@ -652,10 +652,10 @@ class _DashboardScreenState extends State<DashboardScreen>
               width: 52, height: 52,
               decoration: BoxDecoration(
                 gradient: isFirst ? AppTheme.greenGradient : null,
-                color: isFirst ? null : AppTheme.greenPrimary.withOpacity(0.12),
+                color: isFirst ? null : AppTheme.greenPrimary.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(14),
                 boxShadow: isFirst
-                    ? [BoxShadow(color: AppTheme.greenPrimary.withOpacity(0.35), blurRadius: 16)]
+                    ? [BoxShadow(color: AppTheme.greenPrimary.withValues(alpha: 0.35), blurRadius: 16)]
                     : null,
               ),
               child: Icon(iconData, color: isFirst ? Colors.white : AppTheme.greenPrimary, size: 22),
@@ -729,12 +729,12 @@ class _DashboardScreenState extends State<DashboardScreen>
                             width: constraints.maxWidth * barFraction,
                             decoration: BoxDecoration(
                               gradient: LinearGradient(colors: [
-                                AppTheme.greenPrimary.withOpacity(opacities[i.clamp(0, 2)]),
-                                AppTheme.greenDark.withOpacity(opacities[i.clamp(0, 2)] * 0.8),
+                                AppTheme.greenPrimary.withValues(alpha: opacities[i.clamp(0, 2)]),
+                                AppTheme.greenDark.withValues(alpha: opacities[i.clamp(0, 2)] * 0.8),
                               ]),
                               borderRadius: BorderRadius.circular(8),
                               boxShadow: i == 0
-                                  ? [BoxShadow(color: AppTheme.greenPrimary.withOpacity(0.25), blurRadius: 10)]
+                                  ? [BoxShadow(color: AppTheme.greenPrimary.withValues(alpha: 0.25), blurRadius: 10)]
                                   : null,
                             ),
                           ),

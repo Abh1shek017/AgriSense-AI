@@ -1,4 +1,5 @@
 /// Data models for the Flask API response.
+library;
 
 class CropRecommendation {
   final String crop;
