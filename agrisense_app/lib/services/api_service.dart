@@ -1,17 +1,13 @@
 import 'dart:convert';
-import 'package:http/http.dart' as http;
+import 'dart:async';
+import 'dart:io';
 import '../models/recommendation.dart';
 
 /// Service for communicating with the Flask crop recommendation API.
 class ApiService {
-  /// Base URL for the crop recommendation API.
-  ///
-  /// Defaults to the Railway deployment URL.
-  /// Override for local dev:  flutter run --dart-define=API_URL=http://10.0.2.2:5000
-  static const String _baseUrl = String.fromEnvironment(
-    'API_URL',
-    defaultValue: 'https://agrisense-ai-production.up.railway.app',
-  );
+  /// Base URL for the crop recommendation API (Railway deployment).
+  static const String _baseUrl =
+      'https://agrisense-ai-production.up.railway.app';
 
   /// POST sensor data to /api/recommend and return parsed response.
   ///
@@ -42,22 +38,54 @@ class ApiService {
       body['rainfall'] = rainfall;
     }
 
-    try {
-      final response = await http
-          .post(
-            Uri.parse('$_baseUrl/api/recommend'),
-            headers: {'Content-Type': 'application/json'},
-            body: jsonEncode(body),
-          )
-          .timeout(const Duration(seconds: 10));
+    final url = '$_baseUrl/api/recommend';
+    print('[ApiService] POST $url');
 
-      final data = jsonDecode(response.body) as Map<String, dynamic>;
+    try {
+      // Check internet connection first
+      try {
+        final result = await InternetAddress.lookup('google.com');
+        if (result.isNotEmpty && result[0].rawAddress.isNotEmpty) {
+          print('[ApiService] Internet connected');
+        }
+      } on SocketException catch (_) {
+        throw ApiException('No internet connection. Please check your data/WiFi.');
+      }
+
+      final client = HttpClient()
+        ..connectionTimeout = const Duration(seconds: 30)
+        ..badCertificateCallback = (cert, host, port) => true;
+
+      final request = await client.postUrl(Uri.parse(url));
+      request.headers.set('Content-Type', 'application/json');
+      request.write(jsonEncode(body));
+
+      final response = await request.close().timeout(
+            const Duration(seconds: 30),
+          );
+
+      final responseBody = await response.transform(utf8.decoder).join();
+      print('[ApiService] Status: ${response.statusCode}');
+      print('[ApiService] Response: $responseBody');
+
+      client.close();
+
+      final data = jsonDecode(responseBody) as Map<String, dynamic>;
       return RecommendationResponse.fromJson(data);
-    } on http.ClientException {
-      throw ApiException('Connection Error — Backend server is unreachable.');
+    } on SocketException catch (e) {
+      print('[ApiService] SocketException: $e');
+      throw ApiException(
+          'Connection Error — No internet or server unreachable. ($e)');
+    } on TimeoutException {
+      print('[ApiService] TimeoutException');
+      throw ApiException('Connection Error — Request timed out. Try again.');
+    } on HandshakeException catch (e) {
+      print('[ApiService] HandshakeException (SSL): $e');
+      throw ApiException('Connection Error — SSL handshake failed. ($e)');
     } catch (e) {
+      print('[ApiService] Unknown error: ${e.runtimeType}: $e');
       if (e is ApiException) rethrow;
-      throw ApiException('Connection Error — Backend server is offline or unreachable.');
+      throw ApiException('Connection Error — $e');
     }
   }
 }
