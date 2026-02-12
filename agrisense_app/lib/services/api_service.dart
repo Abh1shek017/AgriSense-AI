@@ -1,20 +1,17 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:http/http.dart' as http;
 import '../models/recommendation.dart';
 
 /// Service for communicating with the Flask crop recommendation API.
 class ApiService {
-  /// Base URL — Android emulator uses 10.0.2.2 to reach host localhost.
-  /// Web and iOS simulator use localhost directly.
-  /// Physical devices use the PC's WiFi IP.
-  static String get _baseUrl {
-    if (kIsWeb) {
-      return 'http://localhost:5000';
-    }
-    // PC's WiFi IP — phone must be on the same network
-    return 'http://10.151.168.98:5000';
-  }
+  /// Base URL for the crop recommendation API.
+  ///
+  /// Defaults to the Railway deployment URL.
+  /// Override for local dev:  flutter run --dart-define=API_URL=http://10.0.2.2:5000
+  static const String _baseUrl = String.fromEnvironment(
+    'API_URL',
+    defaultValue: 'https://agrisense-ai-production.up.railway.app',
+  );
 
   /// POST sensor data to /api/recommend and return parsed response.
   ///
