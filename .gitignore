@@ -1,0 +1,84 @@
+# ===========================
+# Python
+# ===========================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+*.manifest
+*.spec
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+
+# ===========================
+# Flutter / Dart
+# ===========================
+# Dart build artifacts
+agrisense_app/build/
+agrisense_app/.dart_tool/
+agrisense_app/.packages
+agrisense_app/.pub/
+
+# Generated files
+*.g.dart
+*.freezed.dart
+*.mocks.dart
+
+# ===========================
+# IDE & Editors
+# ===========================
+# IntelliJ / Android Studio
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# ===========================
+# OS Files
+# ===========================
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+*~
+
+# ===========================
+# Firebase
+# ===========================
+google-services.json
+GoogleService-Info.plist
+
+# ===========================
+# Misc
+# ===========================
+*.log
+*.tmp
+*.bak
+*.swp
+*.swo
+.env
+.env.*
+!.env.example
