@@ -817,8 +817,8 @@ class _DashboardScreenState extends State<DashboardScreen>
         spacing: 20, runSpacing: 8,
         children: [
           if (meta.rainfallValueUsed != null)
-            _metaItem(Icons.grain, 'Rainfall: ${meta.rainfallValueUsed!.toStringAsFixed(1)} mm (${meta.rainfallSource ?? "sensor"})'),
-          _metaItem(Icons.smart_toy, 'Model: RandomForest (scikit-learn)'),
+            _metaItem(Icons.grain, 'Rainfall: ${meta.rainfallValueUsed!.toStringAsFixed(1)} mm'),
+          _metaItem(Icons.smart_toy, 'Model: ${meta.model ?? "RandomForest (scikit-learn)"}'),
           _metaItem(Icons.access_time, TimeOfDay.now().format(context)),
         ],
       ),

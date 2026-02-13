@@ -30,6 +30,7 @@ class RecommendationResponse {
   final double? rainfallValueUsed;
   final String? errorMessage;
   final List<String>? errors;
+  final String? model;
 
   bool get isSuccess => status == 'success';
   bool get hasWarnings => warnings != null && warnings!.isNotEmpty;
@@ -42,6 +43,7 @@ class RecommendationResponse {
     this.rainfallValueUsed,
     this.errorMessage,
     this.errors,
+    this.model,
   });
 
   factory RecommendationResponse.fromJson(Map<String, dynamic> json) {
@@ -62,6 +64,9 @@ class RecommendationResponse {
           ((json['metadata'] as Map<String, dynamic>?)?['rainfall_value_used']
                   as num?)
               ?.toDouble(),
+      model:
+          (json['metadata'] as Map<String, dynamic>?)?['model']
+              as String?,
       errorMessage: json['message'] as String?,
       errors: (json['errors'] as List<dynamic>?)
           ?.map((e) => e.toString())
