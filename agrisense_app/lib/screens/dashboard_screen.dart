@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import '../models/recommendation.dart';
 import '../services/api_service.dart';
+import '../services/location_service.dart';
+import '../services/weather_service.dart';
 
 /// Main dashboard screen — mirrors the web frontend layout:
 /// Sensor inputs → Action button → Warnings → Crop cards → Chart
@@ -13,7 +15,7 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   // ── Input Controllers (pre-filled with demo values) ────────────────
   final _nController = TextEditingController(text: '90');
   final _pController = TextEditingController(text: '42');
@@ -22,24 +24,79 @@ class _DashboardScreenState extends State<DashboardScreen>
   final _tempController = TextEditingController(text: '25');
   final _humidityController = TextEditingController(text: '80');
   final _moistureController = TextEditingController(text: '60');
-  final _rainfallController = TextEditingController(text: '200');
+  final _rainfallController = TextEditingController(text: '');
 
   // ── State ──────────────────────────────────────────────────────────
+  // ── State ──────────────────────────────────────────────────────────
   bool _isLoading = false;
+  bool _isRainfallLoading = false;
   RecommendationResponse? _result;
   late AnimationController _animController;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _animController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 600),
     );
+    // Fetch rainfall after build to allow SnackBar context
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initializeRainfallData();
+    });
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _initializeRainfallData();
+    }
+  }
+
+  Future<void> _initializeRainfallData() async {
+    setState(() => _isRainfallLoading = true);
+    try {
+      print('[Dashboard] Initializing rainfall data...');
+      
+      // 1. Get Location
+      final position = await LocationService.determinePosition();
+      
+      // 2. Fetch Rainfall
+      final rainfall = await WeatherService.getSeasonalRainfall(
+        position.latitude,
+        position.longitude,
+      );
+
+      // 3. Update UI
+      if (mounted) {
+        setState(() {
+          _rainfallController.text = rainfall.toStringAsFixed(1);
+        });
+        print('[Dashboard] Rainfall updated to: $rainfall');
+      }
+    } catch (e) {
+      print('[Dashboard] Error fetching rainfall: $e');
+      if (mounted) {
+        // Show friendly error regarding location/weather
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Could not auto-fetch rainfall: ${e.toString().replaceAll("Exception: ", "")}'),
+            backgroundColor: Colors.orange,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isRainfallLoading = false);
+      }
+    }
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     for (final c in [_nController, _pController, _kController, _phController,
         _tempController, _humidityController, _moistureController, _rainfallController]) {
       c.dispose();
@@ -54,6 +111,7 @@ class _DashboardScreenState extends State<DashboardScreen>
       'N': _nController.text, 'P': _pController.text, 'K': _kController.text,
       'pH': _phController.text, 'Temperature': _tempController.text,
       'Humidity': _humidityController.text, 'Moisture': _moistureController.text,
+      'Rainfall': _rainfallController.text,
     };
 
     for (final entry in fields.entries) {
@@ -66,9 +124,6 @@ class _DashboardScreenState extends State<DashboardScreen>
     setState(() { _isLoading = true; _result = null; });
 
     try {
-      final rainfallText = _rainfallController.text.trim();
-      final rainfall = rainfallText.isNotEmpty ? double.tryParse(rainfallText) : null;
-
       final response = await ApiService.getRecommendation(
         nitrogen: double.parse(_nController.text),
         phosphorus: double.parse(_pController.text),
@@ -77,7 +132,7 @@ class _DashboardScreenState extends State<DashboardScreen>
         temperature: double.parse(_tempController.text),
         humidity: double.parse(_humidityController.text),
         moisture: double.parse(_moistureController.text),
-        rainfall: rainfall,
+        rainfall: double.parse(_rainfallController.text),
       );
 
       setState(() => _result = response);
@@ -308,7 +363,7 @@ class _DashboardScreenState extends State<DashboardScreen>
       _SensorField('Temperature', '°C', Icons.thermostat, _tempController),
       _SensorField('Humidity', '%', Icons.cloud, _humidityController),
       _SensorField('Soil Moisture', '%', Icons.water, _moistureController),
-      _SensorField('Rainfall', 'mm', Icons.grain, _rainfallController, optional: true),
+      _SensorField('Rainfall', 'mm', Icons.grain, _rainfallController),
     ];
 
     return AppTheme.glassContainer(
@@ -398,23 +453,6 @@ class _DashboardScreenState extends State<DashboardScreen>
                 overflow: TextOverflow.ellipsis,
               ),
             ),
-            if (field.optional) ...[
-              const Spacer(),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-                decoration: BoxDecoration(
-                  color: const Color(0x0AFFFFFF),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: const Text(
-                  'OPTIONAL',
-                  style: TextStyle(
-                    fontSize: 8, fontWeight: FontWeight.w600,
-                    color: AppTheme.textMuted, letterSpacing: 0.5,
-                  ),
-                ),
-              ),
-            ],
           ],
         ),
         const SizedBox(height: 6),
@@ -435,10 +473,13 @@ class _DashboardScreenState extends State<DashboardScreen>
                     fontSize: 15, fontWeight: FontWeight.w600,
                     color: AppTheme.textPrimary,
                   ),
-                  decoration: const InputDecoration(
-                    contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+                  decoration: InputDecoration(
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
                     border: InputBorder.none,
                     isDense: true,
+                    suffixIcon: (field.label == 'Rainfall' && _isRainfallLoading)
+                        ? Transform.scale(scale: 0.5, child: const CircularProgressIndicator(strokeWidth: 3))
+                        : null,
                   ),
                 ),
               ),
