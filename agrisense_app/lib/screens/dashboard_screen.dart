@@ -1,20 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../theme/app_theme.dart';
 import '../models/recommendation.dart';
-import '../services/api_service.dart';
 import '../services/location_service.dart';
 import '../services/weather_service.dart';
+import '../services/recommendation_provider.dart';
 
 /// Main dashboard screen — mirrors the web frontend layout:
 /// Sensor inputs → Action button → Warnings → Crop cards → Chart
-class DashboardScreen extends StatefulWidget {
+class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
 
   @override
-  State<DashboardScreen> createState() => _DashboardScreenState();
+  ConsumerState<DashboardScreen> createState() => _DashboardScreenState();
 }
 
-class _DashboardScreenState extends State<DashboardScreen>
+class _DashboardScreenState extends ConsumerState<DashboardScreen>
     with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   // ── Input Controllers (pre-filled with demo values) ────────────────
   final _nController = TextEditingController(text: '90');
@@ -27,11 +28,9 @@ class _DashboardScreenState extends State<DashboardScreen>
   final _rainfallController = TextEditingController(text: '');
 
   // ── State ──────────────────────────────────────────────────────────
-  // ── State ──────────────────────────────────────────────────────────
-  bool _isLoading = false;
   bool _isRainfallLoading = false;
-  RecommendationResponse? _result;
   late AnimationController _animController;
+  bool _hasAnimated = false;
 
   @override
   void initState() {
@@ -106,7 +105,7 @@ class _DashboardScreenState extends State<DashboardScreen>
   }
 
   // ── API Call ────────────────────────────────────────────────────────
-  Future<void> _getRecommendation() async {
+  void _getRecommendation() {
     final fields = {
       'N': _nController.text, 'P': _pController.text, 'K': _kController.text,
       'pH': _phController.text, 'Temperature': _tempController.text,
@@ -121,31 +120,18 @@ class _DashboardScreenState extends State<DashboardScreen>
       }
     }
 
-    setState(() { _isLoading = true; _result = null; });
-
-    try {
-      final response = await ApiService.getRecommendation(
-        nitrogen: double.parse(_nController.text),
-        phosphorus: double.parse(_pController.text),
-        potassium: double.parse(_kController.text),
-        ph: double.parse(_phController.text),
-        temperature: double.parse(_tempController.text),
-        humidity: double.parse(_humidityController.text),
-        moisture: double.parse(_moistureController.text),
-        rainfall: double.parse(_rainfallController.text),
-      );
-
-      setState(() => _result = response);
-      _animController.forward(from: 0);
-
-      if (!response.isSuccess) {
-        _showError(response.errorMessage ?? 'Unknown error from server.');
-      }
-    } on ApiException catch (e) {
-      _showError(e.message);
-    } finally {
-      setState(() => _isLoading = false);
-    }
+    _hasAnimated = false; // Reset animation state
+    
+    ref.read(recommendationProvider.notifier).fetchRecommendation(
+      nitrogen: double.parse(_nController.text),
+      phosphorus: double.parse(_pController.text),
+      potassium: double.parse(_kController.text),
+      ph: double.parse(_phController.text),
+      temperature: double.parse(_tempController.text),
+      humidity: double.parse(_humidityController.text),
+      moisture: double.parse(_moistureController.text),
+      rainfall: double.parse(_rainfallController.text),
+    );
   }
 
   void _showError(String message) {
@@ -173,6 +159,25 @@ class _DashboardScreenState extends State<DashboardScreen>
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final isWide = screenWidth > 700;
+    
+    final recommendationState = ref.watch(recommendationProvider);
+    
+    // Handle error state by showing a snackbar (but only once)
+    ref.listen(recommendationProvider, (previous, next) {
+      if (next is RecommendationError) {
+        _showError(next.message);
+      }
+      if (next is RecommendationLoaded && !_hasAnimated) {
+        _animController.forward(from: 0);
+        _hasAnimated = true;
+      }
+    });
+
+    final isLoading = recommendationState is RecommendationLoading;
+    RecommendationResponse? result;
+    if (recommendationState is RecommendationLoaded) {
+      result = recommendationState.response;
+    }
 
     return Scaffold(
       body: Stack(
@@ -194,18 +199,18 @@ class _DashboardScreenState extends State<DashboardScreen>
                     const SizedBox(height: 32),
                     _buildSensorInputs(isWide),
                     const SizedBox(height: 32),
-                    _buildActionButton(),
+                    _buildActionButton(isLoading),
                     const SizedBox(height: 28),
-                    if (_result != null && _result!.hasWarnings)
-                      _buildWarnings(),
-                    if (_result != null && _result!.isSuccess) ...[
+                    if (result != null && result.hasWarnings)
+                      _buildWarnings(result.warnings!),
+                    if (result != null && result.isSuccess) ...[
                       _buildResultsHeader(),
                       const SizedBox(height: 16),
-                      _buildCropCards(isWide),
+                      _buildCropCards(result, isWide),
                       const SizedBox(height: 24),
-                      _buildChart(),
+                      _buildChart(result),
                       const SizedBox(height: 16),
-                      _buildMetadata(),
+                      _buildMetadata(result),
                     ],
                     const SizedBox(height: 48),
                     _buildFooter(),
@@ -501,7 +506,7 @@ class _DashboardScreenState extends State<DashboardScreen>
   }
 
   // ── Action Button (pill, centered — matches CSS .btn-primary) ──────
-  Widget _buildActionButton() {
+  Widget _buildActionButton(bool isLoading) {
     return Column(
       children: [
         Center(
@@ -520,11 +525,11 @@ class _DashboardScreenState extends State<DashboardScreen>
             child: Material(
               color: Colors.transparent,
               child: InkWell(
-                onTap: _isLoading ? null : _getRecommendation,
+                onTap: isLoading ? null : _getRecommendation,
                 borderRadius: BorderRadius.circular(14),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
-                  child: _isLoading
+                  child: isLoading
                       ? Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -557,7 +562,7 @@ class _DashboardScreenState extends State<DashboardScreen>
         ),
         const SizedBox(height: 10),
         const Text(
-          'Analyzes soil & climate data using a RandomForest ML model',
+          'Analyzes soil & climate data using a local ON DEVICE model',
           style: TextStyle(fontSize: 12, color: AppTheme.textMuted),
           textAlign: TextAlign.center,
         ),
@@ -566,8 +571,7 @@ class _DashboardScreenState extends State<DashboardScreen>
   }
 
   // ── Warnings ───────────────────────────────────────────────────────
-  Widget _buildWarnings() {
-    final warnings = _result!.warnings!;
+  Widget _buildWarnings(List<String> warnings) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 24),
       child: Container(
@@ -604,6 +608,38 @@ class _DashboardScreenState extends State<DashboardScreen>
     );
   }
 
+  // ── Metadata ───────────────────────────────────────────────────────
+  Widget _buildMetadata(RecommendationResponse result) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: const Color(0x08FFFFFF),
+        border: Border.all(color: const Color(0x0DFFFFFF)),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Wrap(
+        spacing: 20, runSpacing: 8,
+        children: [
+          if (result.rainfallValueUsed != null)
+            _metaItem(Icons.grain, 'Rainfall: ${result.rainfallValueUsed!.toStringAsFixed(1)} mm'),
+          _metaItem(Icons.smart_toy, 'Model: ${result.model ?? "Local MLP"}'),
+          _metaItem(Icons.access_time, TimeOfDay.now().format(context)),
+        ],
+      ),
+    );
+  }
+
+  Widget _metaItem(IconData icon, String text) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 12, color: AppTheme.greenPrimary),
+        const SizedBox(width: 5),
+        Flexible(child: Text(text, style: const TextStyle(fontSize: 12, color: AppTheme.textMuted))),
+      ],
+    );
+  }
+
   // ── Results Header ─────────────────────────────────────────────────
   Widget _buildResultsHeader() {
     return const Row(children: [
@@ -614,8 +650,8 @@ class _DashboardScreenState extends State<DashboardScreen>
   }
 
   // ── Crop Cards ─────────────────────────────────────────────────────
-  Widget _buildCropCards(bool isWide) {
-    final crops = _result!.recommendations;
+  Widget _buildCropCards(RecommendationResponse result, bool isWide) {
+    final crops = result.recommendations;
 
     if (isWide) {
       return Row(
@@ -651,7 +687,11 @@ class _DashboardScreenState extends State<DashboardScreen>
       'Tomato': Icons.spa, 'Potato': Icons.spa,
       'Sugarcane': Icons.grass, 'Coconut': Icons.park,
     };
-    final iconData = icons[crop.crop] ?? Icons.eco;
+    // Let's capitalize to match the icons map since the model might return lowercase
+    final cropNameCap = crop.crop.isNotEmpty 
+        ? '${crop.crop[0].toUpperCase()}${crop.crop.substring(1)}'
+        : crop.crop;
+    final iconData = icons[cropNameCap] ?? Icons.eco;
 
     return AnimatedBuilder(
       animation: _animController,
@@ -703,7 +743,7 @@ class _DashboardScreenState extends State<DashboardScreen>
             ),
             const SizedBox(height: 14),
             // Crop name
-            Text(crop.crop, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700), textAlign: TextAlign.center),
+            Text(cropNameCap, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700), textAlign: TextAlign.center),
             const SizedBox(height: 6),
             // Confidence
             ShaderMask(
@@ -722,8 +762,8 @@ class _DashboardScreenState extends State<DashboardScreen>
   }
 
   // ── Chart (custom horizontal bar chart) ────────────────────────────
-  Widget _buildChart() {
-    final crops = _result!.recommendations;
+  Widget _buildChart(RecommendationResponse result) {
+    final crops = result.recommendations;
 
     return AppTheme.glassContainer(
       child: Column(
@@ -737,6 +777,9 @@ class _DashboardScreenState extends State<DashboardScreen>
           const SizedBox(height: 24),
           ...List.generate(crops.length, (i) {
             final crop = crops[i];
+            final cropNameCap = crop.crop.isNotEmpty 
+              ? '${crop.crop[0].toUpperCase()}${crop.crop.substring(1)}'
+              : crop.crop;
             final barFraction = crop.confidenceValue / 100.0;
             final opacities = [0.9, 0.65, 0.4];
 
@@ -746,7 +789,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                 children: [
                   SizedBox(
                     width: 72,
-                    child: Text(crop.crop,
+                    child: Text(cropNameCap,
                       style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textSecondary),
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -803,38 +846,7 @@ class _DashboardScreenState extends State<DashboardScreen>
     );
   }
 
-  // ── Metadata ───────────────────────────────────────────────────────
-  Widget _buildMetadata() {
-    final meta = _result!;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: const Color(0x08FFFFFF),
-        border: Border.all(color: const Color(0x0DFFFFFF)),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Wrap(
-        spacing: 20, runSpacing: 8,
-        children: [
-          if (meta.rainfallValueUsed != null)
-            _metaItem(Icons.grain, 'Rainfall: ${meta.rainfallValueUsed!.toStringAsFixed(1)} mm'),
-          _metaItem(Icons.smart_toy, 'Model: ${meta.model ?? "RandomForest (scikit-learn)"}'),
-          _metaItem(Icons.access_time, TimeOfDay.now().format(context)),
-        ],
-      ),
-    );
-  }
 
-  Widget _metaItem(IconData icon, String text) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 12, color: AppTheme.greenPrimary),
-        const SizedBox(width: 5),
-        Flexible(child: Text(text, style: const TextStyle(fontSize: 12, color: AppTheme.textMuted))),
-      ],
-    );
-  }
 
   // ── Footer ─────────────────────────────────────────────────────────
   Widget _buildFooter() {

@@ -1,11 +1,16 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'screens/dashboard_screen.dart';
 import 'theme/app_theme.dart';
 
 void main() {
-  runApp(const AgriSenseApp());
+  runApp(
+    const ProviderScope(
+      child: AgriSenseApp(),
+    ),
+  );
 }
 
 /// Hides the scrollbar and allows scroll-drag from anywhere (mouse + touch).
