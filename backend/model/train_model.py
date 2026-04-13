@@ -1,13 +1,17 @@
 """
-train_model.py — ML Model Training Script for the Crop Recommendation System
+train_model.py — ML Model Training Script for AgriSense AI (v2 — Ensemble)
 
-This script generates synthetic agricultural data covering 22 common crops,
-trains a RandomForestClassifier on 7 soil/climate features, and saves the
-trained model and StandardScaler as .pkl artifacts for the Flask API.
+Trains THREE models from the same synthetic agricultural dataset:
+  1. RandomForestClassifier  → rf_model.pkl   (primary — high accuracy)
+  2. SVC (RBF, probability)  → svm_model.pkl  (high precision on boundary cases)
+  3. MLPClassifier           → mlp_model.pkl  (neural network — pattern recognition)
+
+All three models + the shared StandardScaler are saved side-by-side in model/.
+The legacy crop_model.pkl (RandomForest) is also re-saved so the original
+/api/recommend endpoint continues to work without any changes.
 
 Features used for prediction:
-    - Nitrogen (N), Phosphorus (P), Potassium (K)
-    - Temperature (°C), Humidity (%), pH, Rainfall (mm)
+    N, P, K, temperature, humidity, ph, rainfall
 
 Usage:
     python model/train_model.py
@@ -17,9 +21,11 @@ import os
 import numpy as np
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.svm import SVC
+from sklearn.neural_network import MLPClassifier
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import classification_report
+from sklearn.metrics import classification_report, accuracy_score
 import joblib
 
 
@@ -53,22 +59,17 @@ CROP_PROFILES = {
 }
 
 FEATURE_COLUMNS = ["N", "P", "K", "temperature", "humidity", "ph", "rainfall"]
-SAMPLES_PER_CROP = 120  # Number of synthetic samples per crop
+SAMPLES_PER_CROP = 120  # Synthetic samples per crop class
 
 
 def generate_synthetic_data() -> pd.DataFrame:
     """
-    Generate a synthetic agricultural dataset based on realistic per-crop
-    feature distributions.  Each crop gets SAMPLES_PER_CROP rows sampled
-    uniformly within the defined feature ranges, with a small amount of
-    Gaussian noise added for realism.
+    Generate a synthetic agricultural dataset from per-crop feature distributions.
 
-    Returns:
-        pd.DataFrame  — DataFrame with columns [N, P, K, temperature,
-                         humidity, ph, rainfall, label]
+    Each crop gets SAMPLES_PER_CROP rows sampled uniformly within its defined
+    feature ranges, with small Gaussian noise added for a more realistic spread.
     """
     records = []
-
     for crop_name, ranges in CROP_PROFILES.items():
         for _ in range(SAMPLES_PER_CROP):
             row = {
@@ -85,83 +86,121 @@ def generate_synthetic_data() -> pd.DataFrame:
 
     df = pd.DataFrame(records)
 
-    # Add small Gaussian noise to numeric columns for more natural variance
+    # Add small Gaussian noise to numeric columns for natural variance
     for col in FEATURE_COLUMNS:
         noise = np.random.normal(0, 0.5, size=len(df))
         df[col] = df[col] + noise
 
-    # Clamp pH to valid 0-14 range after noise
-    df["ph"] = df["ph"].clip(0, 14)
+    # Clamp pH and humidity to physically valid ranges after noise
+    df["ph"]       = df["ph"].clip(0, 14)
+    df["humidity"] = df["humidity"].clip(0, 100)
 
     return df
 
 
-def train_and_save_model() -> None:
+def _print_accuracy(name: str, model, X_test_scaled, y_test) -> None:
+    """Print a concise accuracy line and abbreviated classification report."""
+    preds = model.predict(X_test_scaled)
+    acc = accuracy_score(y_test, preds)
+    print(f"\n  [{name}] Test accuracy: {acc:.2%}")
+
+
+def train_and_save_models() -> None:
     """
-    Main training pipeline:
-      1. Generate synthetic data
-      2. Split into train / test
-      3. Fit a StandardScaler on the training features
-      4. Train a RandomForestClassifier (100 trees)
-      5. Evaluate on the test set
-      6. Save the model and scaler as .pkl files in the model/ directory
+    Full ensemble training pipeline:
+      1. Generate synthetic dataset
+      2. Train/test split
+      3. Fit StandardScaler on training data
+      4. Train RF, SVM, MLP models
+      5. Evaluate all three
+      6. Save all artifacts to model/
     """
     print("=" * 60)
-    print("  AgriSense AI — Crop Recommendation Model Trainer")
+    print("  AgriSense AI — Ensemble Model Trainer (v2)")
     print("=" * 60)
 
-    # ── Step 1: Generate dataset ──────────────────────────────────────────
-    print("\n[1/5] Generating synthetic agricultural data...")
+    # --------------------------------------------------------------------------
+    # Step 1: Generate dataset
+    # --------------------------------------------------------------------------
+    print("\n[1/5] Generating synthetic agricultural dataset...")
     df = generate_synthetic_data()
-    print(f"      → Dataset shape: {df.shape}")
-    print(f"      → Crops: {df['label'].nunique()} unique classes")
+    print(f"      -> Shape: {df.shape} | Classes: {df['label'].nunique()}")
 
-    # ── Step 2: Prepare features and labels ───────────────────────────────
     X = df[FEATURE_COLUMNS].values
     y = df["label"].values
 
+    # --------------------------------------------------------------------------
+    # Step 2: Train / test split
+    # --------------------------------------------------------------------------
     X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.2, random_state=42, stratify=y
+        X, y, test_size=0.20, random_state=42, stratify=y,
     )
-    print(f"\n[2/5] Train / test split → {len(X_train)} train, {len(X_test)} test")
+    print(f"\n[2/5] Split -> {len(X_train)} train  |  {len(X_test)} test")
 
-    # ── Step 3: Fit the scaler ────────────────────────────────────────────
-    print("\n[3/5] Fitting StandardScaler on training data...")
+    # --------------------------------------------------------------------------
+    # Step 3: Fit scaler
+    # --------------------------------------------------------------------------
+    print("\n[3/5] Fitting StandardScaler...")
     scaler = StandardScaler()
     X_train_scaled = scaler.fit_transform(X_train)
-    X_test_scaled = scaler.transform(X_test)
+    X_test_scaled  = scaler.transform(X_test)
 
-    # ── Step 4: Train the model ───────────────────────────────────────────
-    print("\n[4/5] Training RandomForestClassifier (n_estimators=100)...")
-    model = RandomForestClassifier(
-        n_estimators=100,
-        max_depth=15,
+    # --------------------------------------------------------------------------
+    # Step 4: Train all three models
+    # --------------------------------------------------------------------------
+    print("\n[4/5] Training ensemble models...")
+
+    print("      -> RandomForestClassifier (n_estimators=100)...")
+    rf_model = RandomForestClassifier(n_estimators=100, max_depth=15,
+                                      random_state=42, n_jobs=-1)
+    rf_model.fit(X_train_scaled, y_train)
+    _print_accuracy("Random Forest", rf_model, X_test_scaled, y_test)
+
+    print("\n      -> SVC (kernel=rbf, probability=True)...")
+    svm_model = SVC(kernel="rbf", probability=True, C=10.0, gamma="scale",
+                    random_state=42)
+    svm_model.fit(X_train_scaled, y_train)
+    _print_accuracy("SVM (RBF)", svm_model, X_test_scaled, y_test)
+
+    print("\n      -> MLPClassifier (2 hidden layers: 128-64)...")
+    mlp_model = MLPClassifier(
+        hidden_layer_sizes=(128, 64),
+        activation="relu",
+        solver="adam",
+        max_iter=500,
+        early_stopping=False,   # Disabled: bug with string labels in sklearn 1.6
+        n_iter_no_change=20,    # Converge if loss delta < tol for 20 iters
+        tol=1e-4,
         random_state=42,
-        n_jobs=-1,
+        verbose=False,
     )
-    model.fit(X_train_scaled, y_train)
+    mlp_model.fit(X_train_scaled, y_train)
+    _print_accuracy("MLP Neural Net", mlp_model, X_test_scaled, y_test)
 
-    # ── Evaluation ────────────────────────────────────────────────────────
-    accuracy = model.score(X_test_scaled, y_test)
-    print(f"\n      ✓ Test accuracy: {accuracy:.2%}")
-    print("\n--- Classification Report (abbreviated) ---")
-    print(classification_report(y_test, model.predict(X_test_scaled), zero_division=0))
-
-    # ── Step 5: Save artifacts ────────────────────────────────────────────
+    # --------------------------------------------------------------------------
+    # Step 5: Save all artifacts
+    # --------------------------------------------------------------------------
+    print("\n[5/5] Saving model artifacts to model/...")
     model_dir = os.path.dirname(os.path.abspath(__file__))
-    model_path = os.path.join(model_dir, "crop_model.pkl")
-    scaler_path = os.path.join(model_dir, "scaler.pkl")
 
-    joblib.dump(model, model_path)
-    joblib.dump(scaler, scaler_path)
+    artifact_map = {
+        "rf_model.pkl":   rf_model,
+        "svm_model.pkl":  svm_model,
+        "mlp_model.pkl":  mlp_model,
+        "scaler.pkl":     scaler,
+        # Keep legacy filename so original /api/recommend endpoint still works
+        "crop_model.pkl": rf_model,
+    }
 
-    print(f"\n[5/5] Artifacts saved:")
-    print(f"      → Model:  {model_path}")
-    print(f"      → Scaler: {scaler_path}")
+    for filename, obj in artifact_map.items():
+        path = os.path.join(model_dir, filename)
+        joblib.dump(obj, path)
+        print(f"      [OK] {filename}")
+
     print("\n" + "=" * 60)
-    print("  Training complete. You can now start the Flask API.")
+    print("  Training complete. Start the API with: python app.py")
     print("=" * 60)
 
 
 if __name__ == "__main__":
-    train_and_save_model()
+    train_and_save_models()
