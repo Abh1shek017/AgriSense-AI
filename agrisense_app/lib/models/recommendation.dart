@@ -31,6 +31,7 @@ class RecommendationResponse {
   final String? errorMessage;
   final List<String>? errors;
   final String? model;
+  final Map<String, double>? ensembleVotes;
 
   bool get isSuccess => status == 'success';
   bool get hasWarnings => warnings != null && warnings!.isNotEmpty;
@@ -44,6 +45,7 @@ class RecommendationResponse {
     this.errorMessage,
     this.errors,
     this.model,
+    this.ensembleVotes,
   });
 
   factory RecommendationResponse.fromJson(Map<String, dynamic> json) {
@@ -76,6 +78,4 @@ class RecommendationResponse {
           .toList(),
     );
   }
-
-  final Map<String, double>? ensembleVotes;
 }

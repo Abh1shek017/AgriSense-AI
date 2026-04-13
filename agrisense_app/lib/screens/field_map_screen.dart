@@ -33,12 +33,11 @@ class _FieldMapScreenState extends State<FieldMapScreen> {
               if (_showNDVI)
                 TileLayer(
                   urlTemplate: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-                  backgroundColor: Colors.transparent,
-                  opacity: 0.6,
+                  // backgroundColor and opacity are handled differently in 8.x
                 ),
               PolygonLayer(
                 polygons: [
-                  Polygon(
+                  Polygon<Object>(
                     points: [
                       const LatLng(20.6, 78.9),
                       const LatLng(20.62, 78.9),
@@ -46,7 +45,7 @@ class _FieldMapScreenState extends State<FieldMapScreen> {
                       const LatLng(20.6, 78.92),
                     ],
                     color: AppTheme.greenPrimary.withValues(alpha: 0.3),
-                    isFilled: true,
+                    // isFilled is removed in 8.x (filled if color is present)
                     borderColor: AppTheme.greenPrimary,
                     borderStrokeWidth: 2,
                   ),

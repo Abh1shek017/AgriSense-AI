@@ -8,6 +8,7 @@ import '../services/recommendation_provider.dart';
 import '../services/soil_service.dart';
 import '../services/nasa_service.dart';
 import '../services/cache_service.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'dart:async';
 
 /// Main dashboard screen — mirrors the web frontend layout:
