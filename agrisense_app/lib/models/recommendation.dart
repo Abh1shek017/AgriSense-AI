@@ -67,10 +67,15 @@ class RecommendationResponse {
       model:
           (json['metadata'] as Map<String, dynamic>?)?['model']
               as String?,
+      ensembleVotes: (json['metadata'] as Map<String, dynamic>?)?['ensemble_votes'] != null
+          ? Map<String, double>.from((json['metadata'] as Map<String, dynamic>?)?['ensemble_votes'])
+          : null,
       errorMessage: json['message'] as String?,
       errors: (json['errors'] as List<dynamic>?)
           ?.map((e) => e.toString())
           .toList(),
     );
   }
+
+  final Map<String, double>? ensembleVotes;
 }

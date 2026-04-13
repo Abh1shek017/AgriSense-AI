@@ -2,10 +2,26 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'screens/dashboard_screen.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'screens/main_scaffold.dart';
 import 'theme/app_theme.dart';
+import 'services/cache_service.dart';
+import 'services/notification_service.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  // Initialize Firebase (wrapped in try-catch to allow running without google-services.json context)
+  try {
+    await Firebase.initializeApp();
+    await NotificationService.init();
+  } catch (e) {
+    debugPrint('Firebase initialization failed: $e');
+  }
+
+  // Initialize Hive
+  await CacheService.init();
+
   runApp(
     const ProviderScope(
       child: AgriSenseApp(),
@@ -53,7 +69,7 @@ class AgriSenseApp extends StatelessWidget {
         ),
         useMaterial3: true,
       ),
-      home: const DashboardScreen(),
+      home: const MainScaffold(),
     );
   }
 }
