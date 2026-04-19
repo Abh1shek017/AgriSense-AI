@@ -1,0 +1,234 @@
+﻿FILE: IoT_CropAI_Roadmap.docx
+============================================================
+≡ƒù║∩╕Å Implementation Roadmap
+IoT Smart Crop Prediction System ΓÇö AgriSense AI
+6-Phase Plan  |  Estimated Duration: 20ΓÇô26 Weeks
+  PHASE 1 ΓÇö Foundation & API Integration  (Weeks 1ΓÇô3)
+Goal: Build the project skeleton, connect all external data APIs, and establish the backend data pipeline.
+Week 1 ΓÇö Project Setup
+Initialise monorepo: FastAPI backend + React frontend + Docker Compose
+Set up PostgreSQL schema: fields, zones, sensor_readings, predictions tables
+Configure Firebase Realtime Database for live dashboard sync
+Create project config system (env vars, API keys manager, logging)
+Week 2 ΓÇö API Integration
+Integrate OpenWeatherMap and Open-Meteo (current + 16-day forecast)
+Integrate NASA POWER API for solar radiation data
+Integrate SoilGrids ISRIC REST API for soil profiles
+Integrate USGS Elevation API for terrain data
+Week 3 ΓÇö Data Fusion Layer
+Implement Kalman filter and weighted API fusion algorithm
+Build data normalisation and unit conversion pipeline
+Write unit tests for fusion accuracy using historical data
+Deliverable: API returns fused virtual sensor readings for any GPS coordinate
+  PHASE 2 ΓÇö IoT Architecture & MQTT Layer  (Weeks 4ΓÇô7)
+Goal: Simulate the full IoT hardware stack including MQTT protocol, edge computing node, and stream processing.
+Week 4 ΓÇö MQTT Broker & Sensor Simulation
+Connect HiveMQ Cloud MQTT broker to backend
+Build sensor simulator: publishes fused API readings to MQTT topics (field/zone/sensor)
+Backend subscribes, ingests, stores in PostgreSQL time-series table
+Week 5 ΓÇö Edge Node Simulation
+Build edge processing module: local normalisation, outlier filtering, compression
+Implement fault injection: randomly disable sensors, trigger fallback logic
+Edge output feeds into cloud pipeline ΓÇö two-stage data flow established
+Weeks 6ΓÇô7 ΓÇö Stream Processing Pipeline
+Implement Kafka-style pipeline in Node.js: ingest ΓåÆ validate ΓåÆ transform ΓåÆ feature engineer
+Schema validation with rejection queue for malformed readings
+Feature engineering: compute derived metrics (ET0, soil moisture deficit, heat accumulation)
+Deliverable: Live pipeline running with MQTT data flowing end-to-end to feature store
+  PHASE 3 ΓÇö ML Engine & Prediction Core  (Weeks 8ΓÇô11)
+Goal: Build, train, and wire up the ensemble ML prediction models with time-series forecasting.
+Weeks 8ΓÇô9 ΓÇö Ensemble Model Training
+Collect and clean public crop dataset (Kaggle Crop Recommendation dataset)
+Train Random Forest model with soil + weather features
+Train SVM (RBF Kernel) classifier for binary crop suitability
+Train LSTM on 30-day historical weather sequences (PyTorch or Keras)
+Implement weighted voting ensemble layer with configurable weights
+Week 10 ΓÇö Forecasting Pipeline
+Integrate Prophet for 14-day forecast generation from historical API data
+Feed forecast features into LSTM ΓÇö predict crop on future conditions
+Generate forecast confidence bands (upper/lower bounds)
+Week 11 ΓÇö Anomaly Detection & RL Feedback
+Implement Z-score and IQR-based anomaly detection on sensor streams
+Build alert tiering system: Info / Warning / Critical with action recommendations
+Stub out RL feedback loop with Q-learning reward shaping (simulated yield outcomes)
+Deliverable: POST /predict returns ensemble recommendation with confidence + forecast
+  PHASE 4 ΓÇö Digital Twin & Geospatial Layer  (Weeks 12ΓÇô15)
+Goal: Build the digital twin, interactive field map, soil profile model, and geospatial intelligence features.
+Integrate Mapbox/Leaflet.js ΓÇö field draw tool with polygon zone splitting
+DEM elevation data fetch ΓåÆ compute slope, aspect, drainage risk per zone
+Build digital twin grid model: N├ùM cell spatial state management
+Fetch and render NDVI overlay from NASA Earthdata or Sentinel Hub
+3D soil profile model: topsoil / subsoil / bedrock layer data per zone
+Microclimate simulation: interpolate temperature and moisture across cells
+Deliverable: Interactive field map with per-zone crop recommendations rendered live
+  PHASE 5 ΓÇö Frontend Dashboard & UI Build  (Weeks 16ΓÇô20)
+Goal: Build the full React frontend with all animated UI components, circuit canvas, and interactive panels.
+Weeks 16ΓÇô17 ΓÇö Circuit Animator & Sensor UI
+SVG circuit board component: sensors ΓåÆ microcontroller ΓåÆ edge node ΓåÆ cloud
+Animated data pulse particles flowing along wire paths
+Live oscilloscope waveform per sensor channel using D3.js
+Fault simulation UI: click sensor to inject fault, watch fallback activate
+Weeks 18ΓÇô19 ΓÇö Prediction & Analytics Panels
+Ensemble voting panel: model debate cards with confidence meters
+14-day forecast chart with confidence bands (Recharts)
+Workflow DAG visualiser with animated edges (React Flow)
+Per-zone confidence heatmap overlay on field map
+Week 20 ΓÇö Planning Tools
+Crop rotation planner: 4-season calendar with market price tags
+Irrigation scheduler: daily water budget output table per zone
+Anomaly alert feed: real-time scrollable list with severity badges
+Deliverable: Full dashboard functional end-to-end in browser
+  PHASE 6 ΓÇö Optimisation & Deployment  (Weeks 21ΓÇô26)
+Goal: Performance tuning, RL feedback integration, comprehensive testing, Docker deployment, and documentation.
+Finalise Q-learning RL feedback loop ΓÇö tune reward function with simulated outcomes
+Performance profiling: API response times, ML inference latency, frontend frame rate
+PostgreSQL query optimisation: indexes on time-series tables, caching layer
+Docker Compose production setup: Nginx, FastAPI, PostgreSQL, MQTT bridge
+CI/CD pipeline (GitHub Actions): lint, test, build, deploy
+End-to-end integration tests covering full data pipeline
+Write comprehensive README, API documentation (FastAPI /docs), and architecture diagram
+Record demo video walkthrough of all major features
+Timeline & Milestone Summary
+Total Estimated Duration: 20ΓÇô26 weeks  |  Complexity Level: Expert  |  Stack: Full-Stack IoT + ML + Geospatial
+
+FILE: IoT_CropAI_Features.docx
+============================================================
+≡ƒî▒ IoT Smart Crop Prediction System
+Complete Feature Specifications & Architecture Guide
+Version 1.0  |  Project: AgriSense AI
+Project Overview
+1. Core Sensor Fusion Engine
+Rather than relying on a single data source, the system aggregates real-world environmental data from multiple external APIs and processes them through a sensor fusion layer ΓÇö simulating the behaviour of a deployed IoT sensor array in the field.
+1.1 Multi-Source API Integration
+OpenWeatherMap ΓÇö temperature, humidity, wind speed, precipitation
+NASA POWER API ΓÇö solar radiation, longwave radiation, surface pressure
+SoilGrids (ISRIC) ΓÇö soil texture, bulk density, pH, organic carbon per horizon
+USGS Elevation API ΓÇö terrain elevation, slope angle, aspect
+Open-Meteo ΓÇö 16-day weather forecast for predictive planning
+1.2 Kalman Filtering & Weighted Fusion
+Conflicting readings from different APIs are reconciled using a weighted averaging and Kalman filtering algorithm. Each source is assigned a dynamic trust score based on historical accuracy, and the fused output is treated as the virtual sensor reading fed into downstream models.
+2. Digital Twin of the Field
+A real-time digital twin represents a virtual replica of the farm field, mirroring live API data into a spatial model. Each zone of the field has its own simulated microclimate, soil moisture gradient, and elevation-influenced behaviour.
+2.1 Grid-Based Field Model
+Field divided into an N├ùM cell grid, each cell independently tracked
+Each cell stores temperature, humidity, soil NPK, moisture level, pH
+Cells update in real time as API data refreshes
+2.2 Microclimate Simulation
+Using elevation data and wind direction, the system simulates microclimatic variation across cells ΓÇö shaded zones, frost pockets, and high-drainage ridgelines are all modelled and reflected in crop suitability scores.
+3. Simulated Sensor Hardware Layer
+The UI renders a fully interactive circuit board canvas where virtual sensors are wired to a simulated ESP32/Arduino microcontroller. This brings the IoT workflow to life visually and demonstrates the physical data pipeline without real hardware.
+3.1 Circuit Board Canvas
+SVG-based circuit with DHT22, soil moisture, pH, NPK, and GPS sensor nodes
+Animated data pulses flowing through wires to the edge node
+Pin labels, voltage indicators, and signal waveforms per sensor
+Random sensor fault injection ΓÇö malfunction events trigger fault-tolerance logic
+3.2 Fault Tolerance & Missing Data Handling
+When a virtual sensor fails, the system falls back to interpolated values from neighbouring cells or last-known readings. Anomaly flags are raised and displayed in the dashboard with suggested interventions.
+4. Ensemble Machine Learning Prediction
+Crop prediction is handled by an ensemble of three ML models running in parallel. Each model returns a crop recommendation with a confidence score, and a voting mechanism resolves the final output.
+4.1 Voting & Confidence Resolution
+A weighted voting layer combines model outputs. If models disagree, the UI visualises the 'debate' ΓÇö showing each model's argument with supporting sensor data, and the final majority verdict.
+5. Time-Series Forecasting
+Historical data from the past 30 days is retrieved and used to train a Prophet or LSTM forecasting model. Crops are recommended based on predicted future conditions over the next 14 days ΓÇö not just the current snapshot.
+14-day temperature, rainfall, and humidity forecast pipeline
+Rolling feature windows for seasonal pattern recognition
+Confidence bands displayed on forecast chart in the dashboard
+6. Geospatial & Field Intelligence
+6.1 Interactive Field Mapping
+Users draw their field boundary on an interactive Leaflet.js or Mapbox map. The field is auto-divided into zones, and each zone receives an independent crop recommendation. NASA/Sentinel NDVI overlays show live vegetation health.
+6.2 Soil Profile 3D Model
+Soil is modelled in three vertical layers (topsoil, subsoil, bedrock), each with distinct NPK levels, pH, and water retention properties. Sensors at different simulated depths feed layer-specific data.
+6.3 Elevation & Drainage Analysis
+DEM (Digital Elevation Model) data is used to compute water runoff paths, drainage risk zones, and per-zone sunlight exposure angles ΓÇö all factored into the suitability score for each crop.
+7. System Architecture & IoT Pipeline
+7.1 Edge Computing Simulation
+A simulated edge node (Raspberry Pi equivalent) pre-processes raw sensor readings before cloud transmission. The UI shows a two-stage pipeline: local edge filtering and normalisation, followed by cloud ML inference.
+7.2 MQTT Protocol Layer
+A real MQTT broker (HiveMQ Cloud free tier or Mosquitto) is integrated. Simulated sensors publish to topics such as field/zone1/temperature, and the backend subscribes to aggregate real-time streams ΓÇö mirroring production IoT architecture.
+7.3 Stream Processing Pipeline
+A mini Kafka-style pipeline (implemented in Node.js) routes sensor data through: ingestion ΓåÆ schema validation ΓåÆ transformation ΓåÆ feature engineering ΓåÆ model inference. Each stage is visualised in the Workflow DAG on the dashboard.
+8. Advanced Dashboard Features
+8.1 Anomaly Detection & Alerts
+Real-time anomaly detection flags sudden spikes in sensor readings (pH crash, temperature surge, moisture drop). Alerts are tiered: Info, Warning, and Critical ΓÇö with root cause analysis hints and recommended actions.
+8.2 Multi-Season Crop Rotation Planner
+The system plans 3-4 season crop sequences considering soil nutrient depletion, pest break cycles, and live commodity prices fetched from agriculture market APIs. Each rotation plan includes projected yield and market value estimates.
+8.3 Water Budget Optimizer & Irrigation Scheduler
+Daily water requirements per zone are calculated using the FAO Penman-Monteith ET0 formula, incorporating soil water holding capacity, crop coefficient (Kc), and rainfall forecasts. Output is a daily irrigation schedule per zone.
+8.4 Reinforcement Learning Feedback Loop
+After a crop recommendation is accepted, the system simulates an accelerated growing season. Yield outcomes are fed back as rewards, slowly tuning the ensemble model weights through a simple Q-learning feedback mechanism.
+9. UI/UX Feature Specifications
+10. Full System Stack Summary
+
+FILE: AgriSense_Mobile_FeaturePlan.docx
+============================================================
+≡ƒô▒ AgriSense AI ΓÇö Flutter App
+What to Add to Mobile vs. What Belongs Elsewhere
+Decision Guide for the Flutter App  |  April 2026
+≡ƒôè  Complete Feature Decision Table
+Every major feature from the project spec is evaluated below. Decisions are made based on whether the feature fits a mobile use case, screen size constraints, offline requirements, and Flutter capability.
+Γ£à  Features to ADD in the Flutter App
+1. Multi-API Data Fetching Upgrade
+Your app already fetches weather data. Extend this to also call SoilGrids and NASA POWER using the device's GPS coordinates. Wrap all three calls in a single Riverpod FutureProvider so they load in parallel and the UI shows one unified loading state.
+Package: dio or http ΓÇö already familiar from your current setup
+Trigger on app launch + on field zone change
+Store responses in Hive for offline cache
+2. Push Notifications for Anomaly Alerts
+When the backend detects an anomaly (via the ML pipeline), it should push a notification to the mobile app. Use Firebase Cloud Messaging (FCM) since you're already on Firebase.
+Backend sends FCM notification when anomaly severity is Warning or Critical
+App shows notification with sensor name, reading, and suggested action
+Tapping the notification opens the relevant zone detail screen
+Package: firebase_messaging (already in your ecosystem)
+3. Simplified Field Map with flutter_map
+Add a map screen where the user can see their field zones and tap a zone to get that zone's crop recommendation. Keep it 2D ΓÇö the 3D terrain view is for the web dashboard.
+Package: flutter_map + latlong2
+Draw polygon zones on map, each zone fetches its own prediction from backend
+Colour zones by top recommended crop (green = good, amber = marginal)
+NDVI toggle: overlay a colour gradient showing vegetation health per zone
+4. Ensemble Prediction Results Screen
+Currently you show top-3 crops. Extend this screen to show which of the 3 models (Random Forest, SVM, LSTM) voted for each crop, with individual confidence scores. Keep it as cards ΓÇö no complex DAG or animated debate UI on mobile.
+3 model cards, each showing its top pick and confidence %
+Final verdict card at the bottom with overall confidence
+Swipe between crops to see full agronomic notes per crop
+5. 14-Day Forecast Summary Strip
+A horizontal scrollable strip of 14 day-cards showing: icon (sunny/rainy), temperature range, and crop suitability score for that day. Not the full chart ΓÇö just the key numbers.
+Data from Open-Meteo 16-day forecast endpoint (free, no key needed)
+Each card is ~80px wide ΓÇö 14 cards fit in a horizontal ListView
+Tap a card to see which crop is recommended on that specific forecast day
+6. Offline Mode with Hive Caching
+This is actually critical for a field tool. Farmers often have poor connectivity in remote fields. Cache the last successful prediction, sensor readings, and forecast locally.
+Package: hive + hive_flutter ΓÇö already lightweight, perfect for Flutter
+On app launch, check connectivity. If offline, load cached data with a clear banner
+Cache invalidation: auto-refresh when connectivity resumes
+Show timestamp of last sync so the farmer knows how fresh the data is
+7. Simplified Crop Rotation Planner
+A 3-card horizontal scroll showing the current season recommendation, next season, and the season after. Each card shows crop name, soil recovery note, and estimated market value. Much simpler than the full web calendar.
+Backend returns a 3-season rotation plan as a simple JSON array
+Each card: crop icon, name, 'Why this crop?' one-liner, NPK impact summary
+Option to save/share the rotation plan as a PDF from the app
+8. Irrigation Schedule ΓÇö Today's Summary Only
+Show today's water requirement per zone in millimetres, calculated on the backend using ET0. A simple list screen ΓÇö one row per zone with a water drop icon and the mm value. Full schedule is on the web dashboard.
+Backend endpoint: GET /irrigation/today?field_id=X returns per-zone values
+Color-code: blue = normal, orange = high demand, red = critical deficit
+Γ¥î  Features to SKIP on Mobile (Web Dashboard Only)
+Why These Don't Belong on Mobile
+The features below are either too visually dense for a phone screen, require technologies that don't work in Flutter (Three.js, D3.js, SVG canvas), or are only useful to the developer/engineer ΓÇö not to the actual farmer in the field.
+SVG Circuit Board Animator
+The circuit canvas requires fine-grained SVG interactions, animated particle pulses along wire paths, and a canvas that's at least 800px wide to be readable. None of that works on mobile. A 6-inch phone screen would render it as an unreadable mess. Build this in React on the web dashboard and link to it from the app via an in-app WebView if needed.
+ML Ensemble Voting DAG Visualiser
+A directed acyclic graph with animated edges showing Sensor ΓåÆ Edge ΓåÆ Cloud ΓåÆ Model ΓåÆ Output is a desktop-class visualisation. React Flow or D3.js renders this well at 1200px+ width. On a 400px phone screen, the nodes would overlap and the edges would be unreadable. The ensemble results card (which you ARE adding) gives the farmer the same information in a phone-friendly format.
+3D Field Terrain View
+Three.js doesn't run in Flutter. You'd have to embed a WebView and render it as a web page inside the app, which is heavy, slow, and awkward to interact with on mobile. The 2D flutter_map with zone polygons and NDVI overlay gives the farmer 90% of the same value at a fraction of the complexity.
+MQTT Live Stream Dashboard & Oscilloscope
+A table of 10 sensor channels updating every second with waveform graphs per channel is an engineering monitoring screen. It requires a persistent MQTT WebSocket connection, live chart rendering, and a lot of screen real estate. This is exactly what a web dashboard is for ΓÇö build it there and keep the mobile app focused on results, not raw telemetry.
+Kafka Pipeline Monitor
+Showing the ingestion ΓåÆ validation ΓåÆ transformation ΓåÆ inference pipeline stages is purely a developer/DevOps view. No farmer needs to see this. It belongs in a web admin panel.
+RL Feedback & Model Configuration
+Adjusting Q-learning reward weights, retraining models, and tuning ensemble voting weights are backend engineering tasks. These should be in a web admin interface with proper forms and confirmation flows ΓÇö not in a mobile app.
+Full 4-Season Calendar & Rotation Planner
+The full web version has a grid calendar with crop icons, market price tags, nutrient depletion bars, and pest cycle indicators across 4 seasons. That's a lot of information for a small screen. The simplified 3-card strip (which you ARE adding) covers what the farmer actually needs in the field.
+Edge Node Simulation Panel
+Showing the two-stage edge ΓåÆ cloud pipeline with simulated Raspberry Pi processing stats is for demonstrating the architecture to a technical audience. It has no use for a farmer and doesn't need to be in a mobile app at all.
+≡ƒô▒  Recommended Mobile Screen Structure
+Here's how the final Flutter app navigation should be structured after adding the new features:
+≡ƒôª  Flutter Packages to Add
+

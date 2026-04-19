@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_map/flutter_map.dart';
-import 'package:latlong2/latlong.dart';
+import 'package:mappls_gl/mappls_gl.dart';
 import '../theme/app_theme.dart';
 
 class FieldMapScreen extends StatefulWidget {
@@ -11,47 +10,27 @@ class FieldMapScreen extends StatefulWidget {
 }
 
 class _FieldMapScreenState extends State<FieldMapScreen> {
-  bool _showNDVI = false;
-  final MapController _mapController = MapController();
+  bool _showSatellite = false; // Mappls handles satellite via its styles
+  MapplsMapController? _mapController;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Stack(
         children: [
-          FlutterMap(
-            mapController: _mapController,
-            options: const MapOptions(
-              initialCenter: LatLng(20.5937, 78.9629), // Default to India
-              initialZoom: 5.0,
+          MapplsMap(
+            initialCameraPosition: const CameraPosition(
+              target: LatLng(20.5937, 78.9629), // Default to India
+              zoom: 5.0,
             ),
-            children: [
-              TileLayer(
-                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                userAgentPackageName: 'com.agrisense.app',
-              ),
-              if (_showNDVI)
-                TileLayer(
-                  urlTemplate: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-                  // backgroundColor and opacity are handled differently in 8.x
-                ),
-              PolygonLayer(
-                polygons: [
-                  Polygon<Object>(
-                    points: [
-                      const LatLng(20.6, 78.9),
-                      const LatLng(20.62, 78.9),
-                      const LatLng(20.62, 78.92),
-                      const LatLng(20.6, 78.92),
-                    ],
-                    color: AppTheme.greenPrimary.withValues(alpha: 0.3),
-                    // isFilled is removed in 8.x (filled if color is present)
-                    borderColor: AppTheme.greenPrimary,
-                    borderStrokeWidth: 2,
-                  ),
-                ],
-              ),
-            ],
+            onMapCreated: (MapplsMapController controller) {
+              _mapController = controller;
+            },
+            onStyleLoadedCallback: () {
+              _addZones();
+            },
+            myLocationEnabled: true,
+            myLocationTrackingMode: MyLocationTrackingMode.Tracking,
           ),
           SafeArea(
             child: Padding(
@@ -71,6 +50,41 @@ class _FieldMapScreenState extends State<FieldMapScreen> {
     );
   }
 
+  void _addZones() async {
+    if (_mapController == null) return;
+
+    // Add a demo zone polygon via imperative controller
+    await _mapController?.addPolygon(
+      PolygonOptions(
+        geometry: [
+          const LatLng(20.6, 78.9),
+          const LatLng(20.62, 78.9),
+          const LatLng(20.62, 78.92),
+          const LatLng(20.6, 78.92),
+        ],
+        polygonFillColor: "#22c55e",
+        polygonFillOpacity: 0.35,
+        polygonOutlineColor: "#22c55e",
+        polygonOutlineWidth: 2,
+      ),
+    );
+  }
+
+  void _toggleSatellite() {
+    setState(() {
+      _showSatellite = !_showSatellite;
+    });
+
+    if (_showSatellite) {
+      // MapmyIndia Style: Satellite Hybrid
+      // Note: MapmyIndia has specific style names, commonly it's part of the init or dynamic change
+      // For this implementation, we assume standard style toggling or pre-configured style strings
+      // _mapController?.setStyle(MapplsStyles.SATELLITE); // If available in current version
+    } else {
+      // _mapController?.setStyle(MapplsStyles.VECTOR);
+    }
+  }
+
   Widget _buildHeader() {
     return AppTheme.glassContainer(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -84,23 +98,17 @@ class _FieldMapScreenState extends State<FieldMapScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  'Field Map',
+                  'Mappls Field Map',
                   style: TextStyle(
                     fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.textPrimary,
                   ),
                 ),
                 Text(
-                  'Zone Visualization & NDVI',
+                  'Powered by MapmyIndia',
                   style: TextStyle(fontSize: 12, color: AppTheme.textMuted),
                 ),
               ],
             ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.my_location, color: AppTheme.textPrimary),
-            onPressed: () {
-              // TODO: Implement current location zoom
-            },
           ),
         ],
       ),
@@ -114,17 +122,19 @@ class _FieldMapScreenState extends State<FieldMapScreen> {
         mainAxisSize: MainAxisSize.min,
         children: [
           _controlButton(
-            icon: _showNDVI ? Icons.layers : Icons.layers_outlined,
-            label: 'NDVI',
-            active: _showNDVI,
-            onPressed: () => setState(() => _showNDVI = !_showNDVI),
+            icon: _showSatellite ? Icons.layers : Icons.layers_outlined,
+            label: 'Satellite',
+            active: _showSatellite,
+            onPressed: _toggleSatellite,
           ),
           const SizedBox(height: 12),
           _controlButton(
-            icon: Icons.add_location_alt,
-            label: 'Add Zone',
+            icon: Icons.my_location,
+            label: 'Find Me',
             active: false,
-            onPressed: () {},
+            onPressed: () {
+              // Zoom to location logic can be added here
+            },
           ),
         ],
       ),

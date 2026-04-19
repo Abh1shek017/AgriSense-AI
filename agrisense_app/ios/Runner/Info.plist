@@ -45,5 +45,17 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>MapplsSDKKey</key>
+	<string>d95cd4f66170b7603b3153ec6c86a547</string>
+	<key>MapplsRestKey</key>
+	<string>d95cd4f66170b7603b3153ec6c86a547</string>
+	<key>MapplsAtlasClientId</key>
+	<string>96dHZVzsAuvBjuCACnTicQeKrPOlP_C1rBoN</string>
+	<key>MapplsAtlasClientSecret</key>
+	<string>lrFxl-iSEg_ZhLvZG9EpNGrKeyTJEDskhT_pGg</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>This app needs access to location to show field positions on the map.</string>
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>This app needs access to location to show field positions on the map.</string>
 </dict>
 </plist>

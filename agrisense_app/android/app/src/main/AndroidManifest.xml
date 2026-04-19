@@ -35,6 +35,18 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+        <meta-data
+            android:name="com.mappls.sdk.maps.RestAPIKey"
+            android:value="d95cd4f66170b7603b3153ec6c86a547" />
+        <meta-data
+            android:name="com.mappls.sdk.maps.MapSDKKey"
+            android:value="d95cd4f66170b7603b3153ec6c86a547" />
+        <meta-data
+            android:name="com.mappls.sdk.maps.AtlasClientId"
+            android:value="96dHZVzsAuvBjuCACnTicQeKrPOlP_C1rBoN" />
+        <meta-data
+            android:name="com.mappls.sdk.maps.AtlasClientSecret"
+            android:value="lrFxl-iSEg_ZhLvZG9EpNGrKeyTJEDskhT_pGg" />
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and
