@@ -30,7 +30,7 @@ class _FieldMapScreenState extends State<FieldMapScreen> {
               _addZones();
             },
             myLocationEnabled: true,
-            myLocationTrackingMode: MyLocationTrackingMode.Tracking,
+            myLocationTrackingMode: MyLocationTrackingMode.tracking,
           ),
           SafeArea(
             child: Padding(
@@ -54,18 +54,20 @@ class _FieldMapScreenState extends State<FieldMapScreen> {
     if (_mapController == null) return;
 
     // Add a demo zone polygon via imperative controller
-    await _mapController?.addPolygon(
-      PolygonOptions(
+    await _mapController?.addFill(
+      FillOptions(
         geometry: [
-          const LatLng(20.6, 78.9),
-          const LatLng(20.62, 78.9),
-          const LatLng(20.62, 78.92),
-          const LatLng(20.6, 78.92),
+          [
+            const LatLng(20.6, 78.9),
+            const LatLng(20.62, 78.9),
+            const LatLng(20.62, 78.92),
+            const LatLng(20.6, 78.92),
+            const LatLng(20.6, 78.9),
+          ],
         ],
-        polygonFillColor: "#22c55e",
-        polygonFillOpacity: 0.35,
-        polygonOutlineColor: "#22c55e",
-        polygonOutlineWidth: 2,
+        fillColor: "#22c55e",
+        fillOpacity: 0.35,
+        fillOutlineColor: "#22c55e",
       ),
     );
   }

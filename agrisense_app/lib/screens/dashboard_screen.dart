@@ -77,7 +77,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
       ]);
 
       final soil = results[0] as Map<String, double>;
-      final nasa = results[1] as Map<String, dynamic>;
+      final nasa = results[1];
 
       if (mounted) {
         setState(() {
@@ -111,7 +111,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
   Future<void> _initializeRainfallData() async {
     setState(() => _isRainfallLoading = true);
     try {
-      print('[Dashboard] Initializing rainfall data...');
+      debugPrint('[Dashboard] Initializing rainfall data...');
       
       // 1. Get Location
       final position = await LocationService.determinePosition();
@@ -127,10 +127,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
         setState(() {
           _rainfallController.text = rainfall.toStringAsFixed(1);
         });
-        print('[Dashboard] Rainfall updated to: $rainfall');
+        debugPrint('[Dashboard] Rainfall updated to: $rainfall');
       }
     } catch (e) {
-      print('[Dashboard] Error fetching rainfall: $e');
+      debugPrint('[Dashboard] Error fetching rainfall: $e');
       if (mounted) {
         // Show friendly error regarding location/weather
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1012,6 +1012,5 @@ class _SensorField {
   final String unit;
   final IconData icon;
   final TextEditingController controller;
-  final bool optional;
-  _SensorField(this.label, this.unit, this.icon, this.controller, {this.optional = false});
+  _SensorField(this.label, this.unit, this.icon, this.controller);
 }

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
 
 class SoilService {
@@ -48,7 +49,7 @@ class SoilService {
         return result;
       }
     } catch (e) {
-      print('[SoilService] Error: $e');
+      debugPrint('[SoilService] Error: $e');
     }
     return {};
   }

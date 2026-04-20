@@ -1,4 +1,4 @@
-import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'dart:async';
 import '../models/recommendation.dart';
 import '../models/local_crop_model.dart';
@@ -25,24 +25,24 @@ class ApiService {
     String rainfallSource = 'sensor';
     if (finalRainfall == null) {
       try {
-        print('[ApiService] Rainfall not provided. Fetching from location...');
+        debugPrint('[ApiService] Rainfall not provided. Fetching from location...');
         final position = await LocationService.determinePosition();
         final fetchedVal = await WeatherService.getSeasonalRainfall(
           position.latitude,
           position.longitude,
         );
-        print('[ApiService] Auto-fetched rainfall: $fetchedVal mm');
+        debugPrint('[ApiService] Auto-fetched rainfall: $fetchedVal mm');
         finalRainfall = fetchedVal;
         rainfallSource = 'estimated (API)';
       } catch (e) {
-        print('[ApiService] Failed to fetch rainfall: $e');
+        debugPrint('[ApiService] Failed to fetch rainfall: $e');
         // Fallback to average generic rainfall if internet fails
         finalRainfall = 100.0;
         rainfallSource = 'estimated (offline fallback)';
       }
     }
 
-    print('[ApiService] Running ML inference offline...');
+    debugPrint('[ApiService] Running ML inference offline...');
     
     // Feature order MUST match the python training script:
     // "N", "P", "K", "temperature", "humidity", "ph", "rainfall"

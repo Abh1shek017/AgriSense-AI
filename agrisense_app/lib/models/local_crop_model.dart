@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:math';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 class LocalCropModel {
@@ -11,9 +12,9 @@ class LocalCropModel {
     try {
       final jsonString = await rootBundle.loadString('assets/model_data.json');
       _modelData = jsonDecode(jsonString);
-      print('[LocalCropModel] Model loaded successfully.');
+      debugPrint('[LocalCropModel] Model loaded successfully.');
     } catch (e) {
-      print('[LocalCropModel] Error loading model: $e');
+      debugPrint('[LocalCropModel] Error loading model: $e');
     }
   }
 

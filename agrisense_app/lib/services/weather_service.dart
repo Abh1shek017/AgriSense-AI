@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 class WeatherService {
@@ -25,7 +26,7 @@ class WeatherService {
     final startStr = "${start.year}-${start.month.toString().padLeft(2, '0')}-${start.day.toString().padLeft(2, '0')}";
     final endStr = "${end.year}-${end.month.toString().padLeft(2, '0')}-${end.day.toString().padLeft(2, '0')}";
 
-    print('[WeatherService] Fetching seasonal rainfall (${seasonDates['name']}) for $startStr to $endStr');
+    debugPrint('[WeatherService] Fetching seasonal rainfall (${seasonDates['name']}) for $startStr to $endStr');
 
     final url = Uri.parse(
         '$_archiveUrl?latitude=$latitude&longitude=$longitude&start_date=$startStr&end_date=$endStr&daily=precipitation_sum&timezone=auto');
@@ -45,7 +46,7 @@ class WeatherService {
               totalRainfall += (item as num).toDouble();
             }
           }
-          print('[WeatherService] Total seasonal rainfall: $totalRainfall mm');
+          debugPrint('[WeatherService] Total seasonal rainfall: $totalRainfall mm');
           return totalRainfall;
         } else {
            throw Exception('Weather data format error: Missing daily precipitation data');
