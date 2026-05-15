@@ -71,7 +71,7 @@ export default function Hero() {
               transition={{ duration: 0.6, delay: 0.2 }}
               style={{ color: 'var(--text-secondary)', fontSize: 16, lineHeight: 1.75, marginBottom: 32, maxWidth: 500 }}
             >
-              AgriSense AI fuses real-time IoT sensor data from ESP32/Raspberry Pi nodes
+              AgriSense AI fuses real-time IoT sensor data from ESP32-based nodes
               with NASA POWER, SoilGrids, and Open-Meteo APIs — feeding a 3-model ML ensemble
               (Random Forest + SVM + LSTM) for precision crop recommendations with geospatial field intelligence.
             </motion.p>

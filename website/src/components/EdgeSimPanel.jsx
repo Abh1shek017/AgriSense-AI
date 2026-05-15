@@ -3,16 +3,16 @@ import { motion } from 'framer-motion'
 import SectionWrapper, { SectionTitle } from './SectionWrapper'
 
 const EDGE_METRICS = [
-  { label: 'CPU Usage',     unit: '%',     base: 34, variance: 12, color: '#22c55e',  warn: 80 },
-  { label: 'RAM Used',      unit: 'MB',    base: 312, variance: 40, color: '#06b6d4', warn: 500 },
-  { label: 'Temp (SoC)',    unit: '°C',    base: 52, variance: 6, color: '#f59e0b',   warn: 75  },
-  { label: 'Disk I/O',      unit: 'KB/s',  base: 240, variance: 80, color: '#8b5cf6', warn: 900 },
-  { label: 'MQTT Latency',  unit: 'ms',    base: 22, variance: 8, color: '#ec4899',   warn: 100 },
-  { label: 'Dropped Pkts',  unit: '/min',  base: 0.4, variance: 0.5, color: '#f87171',warn: 5  },
+  { label: 'CPU Usage',     unit: '%',     base: 22, variance: 8,  color: '#22c55e',  warn: 85 },
+  { label: 'Free Heap',     unit: 'KB',    base: 312, variance: 20, color: '#06b6d4', warn: 50 },
+  { label: 'Internal Temp', unit: '°C',    base: 42, variance: 4,  color: '#f59e0b',   warn: 70  },
+  { label: 'WiFi Signal',   unit: 'dBm',   base: -55, variance: 10, color: '#8b5cf6', warn: -85 },
+  { label: 'MQTT Latency',  unit: 'ms',    base: 45, variance: 15, color: '#ec4899',   warn: 150 },
+  { label: 'Dropped Pkts',  unit: '/min',  base: 0.1, variance: 0.2, color: '#f87171',warn: 2  },
 ]
 
 const TWO_STAGE = [
-  { icon: '🖥️', label: 'Edge Node', sub: 'Raspberry Pi 4B', color: '#3b82f6', desc: 'Local outlier filter · Kalman smoothing · Compression · TLS publish' },
+  { icon: '📟', label: 'Edge Node', sub: 'ESP32-WROOM-32', color: '#3b82f6', desc: 'Low-power sensing · Kalman smoothing · Message compression · MQTT publish' },
   { icon: '☁️', label: 'Cloud API', sub: 'FastAPI on Cloud Run', color: '#8b5cf6', desc: 'Full feature engineering · ML ensemble · Database write · WebSocket push' },
 ]
 
@@ -34,10 +34,10 @@ export default function EdgeSimPanel() {
   return (
     <SectionWrapper id="edge">
       <SectionTitle
-        icon="🖥️"
+        icon="📟"
         title="Edge Node Simulation Panel"
-        subtitle="Two-stage processing: Raspberry Pi edge node handles local filtering and compression before publishing to the cloud API. Simulates real IoT edge computing behaviour."
-        badge={{ text: 'EDGE COMPUTING DEMO', color: 'blue' }}
+        subtitle="Two-stage processing: ESP32 edge node handles sensor acquisition and basic filtering before publishing to the cloud. Simulates power-efficient IoT logic."
+        badge={{ text: 'ESP32 EDGE DEMO', color: 'blue' }}
       />
 
       {/* Two-stage diagram */}
@@ -87,7 +87,7 @@ export default function EdgeSimPanel() {
       {/* Edge metrics */}
       <div className="glass-card" style={{ padding: 24, marginBottom: 16 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-          <h3 style={{ fontSize: 14, fontWeight: 700 }}>Raspberry Pi 4B — Live Metrics</h3>
+          <h3 style={{ fontSize: 14, fontWeight: 700 }}>ESP32-WROOM-32 — Live Metrics</h3>
           <div style={{ display: 'flex', gap: 8 }}>
             <button
               onClick={() => setFaultActive(f => !f)}
@@ -112,7 +112,7 @@ export default function EdgeSimPanel() {
           {EDGE_METRICS.map((m, i) => {
             const val = metrics[i]
             const pct = Math.min((val / m.warn) * 100, 100)
-            const isWarn = val > m.warn * 0.8
+            const isWarn = m.label === 'WiFi Signal' ? val < m.warn : val > m.warn * 0.8
             const barColor = isWarn ? 'var(--red-400)' : m.color
             return (
               <div key={m.label}>
@@ -157,8 +157,8 @@ export default function EdgeSimPanel() {
             🚨 Fault Detected — Fallback Logic Activated
           </div>
           <p style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.65 }}>
-            Edge node CPU exceeded threshold. System switched to direct cloud pubish mode — skipping local filtering.
-            Cloud API will handle validation. Alert sent to anomaly feed. Heartbeat monitor engaged.
+            ESP32 core thermal threshold exceeded. System switched to direct cloud bypass — skipping local filters.
+            Cloud API will handle raw sensor validation. Alert sent to anomaly feed. Deep-sleep cycles suspended.
           </p>
         </motion.div>
       )}

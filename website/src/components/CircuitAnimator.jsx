@@ -7,8 +7,8 @@ const NODES = [
   { id: 'soil',   x: 60,  y: 200, label: 'Soil EC',       icon: '🌱', color: '#22c55e' },
   { id: 'humid',  x: 60,  y: 300, label: 'Humidity',      icon: '💧', color: '#06b6d4' },
   { id: 'light',  x: 60,  y: 400, label: 'Light/NDVI',    icon: '☀️', color: '#a855f7' },
-  { id: 'mcu',    x: 260, y: 250, label: 'ESP32 MCU',     icon: '⚙️', color: '#10b981' },
-  { id: 'edge',   x: 460, y: 250, label: 'Raspberry Pi\nEdge Node', icon: '🖥️', color: '#3b82f6' },
+  { id: 'mcu',    x: 260, y: 250, label: 'ESP32 Node',    icon: '⚙️', color: '#10b981' },
+  { id: 'edge',   x: 460, y: 250, label: 'ESP32\nGateway', icon: '📟', color: '#3b82f6' },
   { id: 'cloud',  x: 660, y: 250, label: 'FastAPI\nCloud', icon: '☁️', color: '#8b5cf6' },
   { id: 'ml',     x: 860, y: 250, label: 'ML Ensemble',   icon: '🧠', color: '#ec4899' },
 ]
@@ -69,8 +69,8 @@ export default function CircuitAnimator() {
           {/* Labels at top */}
           {[
             { x: 60,  label: 'SENSORS',    color: '#6b8f6e' },
-            { x: 260, label: 'MCU',         color: '#6b8f6e' },
-            { x: 460, label: 'EDGE NODE',   color: '#6b8f6e' },
+            { x: 260, label: 'ESP32',       color: '#6b8f6e' },
+            { x: 460, label: 'GATEWAY',     color: '#6b8f6e' },
             { x: 660, label: 'CLOUD API',   color: '#6b8f6e' },
             { x: 860, label: 'ML ENGINE',   color: '#6b8f6e' },
           ].map(({ x, label, color }) => (

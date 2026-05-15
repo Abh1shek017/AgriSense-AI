@@ -8,7 +8,7 @@ const NAV_LINKS = [
   { id: 'ensemble',    label: 'ML Ensemble' },
   { id: 'forecast',    label: 'Forecast' },
   { id: 'dag',         label: 'Workflow' },
-  { id: 'fieldmap',    label: 'Field Map' },
+  { id: 'fieldmap',    label: 'GPS Fields' },
   { id: 'mqtt',        label: 'Live Stream' },
   { id: 'anomaly',     label: 'Alerts' },
   { id: 'rotation',    label: 'Rotation' },
