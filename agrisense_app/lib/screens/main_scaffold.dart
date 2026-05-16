@@ -55,9 +55,9 @@ class _MainScaffoldState extends State<MainScaffold> {
               label: 'Dashboard',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.map_outlined),
-              activeIcon: Icon(Icons.map),
-              label: 'Field Map',
+              icon: Icon(Icons.gps_fixed),
+              activeIcon: Icon(Icons.gps_fixed),
+              label: 'GPS Field',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.wb_sunny_outlined),

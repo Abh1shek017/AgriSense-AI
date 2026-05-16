@@ -42,6 +42,9 @@
             android:name="com.mappls.sdk.maps.MapSDKKey"
             android:value="d95cd4f66170b7603b3153ec6c86a547" />
         <meta-data
+            android:name="com.mappls.sdk.maps.APIKey"
+            android:value="d95cd4f66170b7603b3153ec6c86a547" />
+        <meta-data
             android:name="com.mappls.sdk.maps.AtlasClientId"
             android:value="96dHZVzsAuvBjuCACnTicQeKrPOlP_C1rBoN" />
         <meta-data

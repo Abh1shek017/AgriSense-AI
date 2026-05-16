@@ -8,8 +8,11 @@ import 'theme/app_theme.dart';
 import 'services/cache_service.dart';
 import 'services/notification_service.dart';
 
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+
   
   // Initialize Firebase (wrapped in try-catch to allow running without google-services.json context)
   try {

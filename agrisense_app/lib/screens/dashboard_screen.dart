@@ -77,17 +77,41 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
       ]);
 
       final soil = results[0] as Map<String, double>;
-      final nasa = results[1];
+      final nasa = results[1] as Map<String, dynamic>;
 
       if (mounted) {
         setState(() {
           if (soil.containsKey('nitrogen')) _nController.text = soil['nitrogen']!.toStringAsFixed(1);
           if (soil.containsKey('ph')) _phController.text = soil['ph']!.toStringAsFixed(1);
-          // NASA data extraction logic here (simplified for demo)
+          
+          // NASA data extraction
           if (nasa.containsKey('T2M')) {
             final temps = nasa['T2M'] as Map;
-            _tempController.text = temps.values.last.toStringAsFixed(1);
+            final lastTemp = temps.values.last;
+            // Fix -999 issue: NASA uses -999 for missing data
+            if (lastTemp != null && lastTemp != -999 && lastTemp != -999.0) {
+              _tempController.text = lastTemp.toStringAsFixed(1);
+            } else {
+              // Default to a reasonable value if data is missing
+              _tempController.text = '25.0';
+            }
           }
+
+          if (nasa.containsKey('RH2M')) {
+            final humidityMap = nasa['RH2M'] as Map;
+            final lastHumidity = humidityMap.values.last;
+            if (lastHumidity != null && lastHumidity != -999 && lastHumidity != -999.0) {
+              _humidityController.text = lastHumidity.toStringAsFixed(1);
+            }
+          }
+
+          // Mocking Soil Moisture based on humidity or a random realistic range
+          final humidity = double.tryParse(_humidityController.text) ?? 50.0;
+          _moistureController.text = (humidity * 0.7 + 10).toStringAsFixed(1);
+          
+          // Fill P and K with some realistic values if they are empty
+          if (_pController.text.isEmpty || _pController.text == '0') _pController.text = '45';
+          if (_kController.text.isEmpty || _kController.text == '0') _kController.text = '42';
         });
         
         ScaffoldMessenger.of(context).showSnackBar(
@@ -99,6 +123,89 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
     } finally {
       if (mounted) setState(() => _isAutoFilling = false);
     }
+  }
+
+  Future<void> _showESP32ConnectionDialog() async {
+    bool isConnecting = true;
+    
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          if (isConnecting) {
+            Future.delayed(const Duration(seconds: 3), () {
+              if (mounted) {
+                setDialogState(() => isConnecting = false);
+              }
+            });
+          }
+
+          return AlertDialog(
+            backgroundColor: AppTheme.bgDeep,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+              side: BorderSide(color: AppTheme.greenPrimary.withValues(alpha: 0.2)),
+            ),
+            title: Row(
+              children: [
+                Icon(
+                  isConnecting ? Icons.bluetooth_searching : Icons.bluetooth_disabled,
+                  color: isConnecting ? AppTheme.greenPrimary : AppTheme.redDanger,
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  isConnecting ? 'Connecting ESP32' : 'Connection Failed',
+                  style: const TextStyle(color: AppTheme.textPrimary, fontSize: 18),
+                ),
+              ],
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (isConnecting) ...[
+                  const CircularProgressIndicator(color: AppTheme.greenPrimary),
+                  const SizedBox(height: 20),
+                  const Text(
+                    'Searching for AgriSense-Node-01...',
+                    style: TextStyle(color: AppTheme.textSecondary),
+                  ),
+                ] else ...[
+                  const Icon(Icons.error_outline, color: AppTheme.redDanger, size: 48),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Failed to connect to the ESP32 device.\nPlease ensure Bluetooth is enabled and the device is powered on.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: AppTheme.textSecondary),
+                  ),
+                ],
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text(
+                  isConnecting ? 'Cancel' : 'Close',
+                  style: TextStyle(color: isConnecting ? AppTheme.textMuted : AppTheme.greenPrimary),
+                ),
+              ),
+              if (!isConnecting)
+                ElevatedButton(
+                  onPressed: () {
+                    setDialogState(() => isConnecting = true);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.greenPrimary,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                  child: const Text('Retry'),
+                ),
+            ],
+          );
+        },
+      ),
+    );
   }
 
   @override
@@ -496,49 +603,69 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
             children: [
               const Icon(Icons.memory, size: 18, color: AppTheme.greenPrimary),
               const SizedBox(width: 10),
-              const Text(
-                'Sensor Readings',
-                style: TextStyle(
-                  fontSize: 17, fontWeight: FontWeight.w700,
-                  color: AppTheme.textPrimary,
+              const Expanded(
+                child: Text(
+                  'Sensor Readings',
+                  style: TextStyle(
+                    fontSize: 15, fontWeight: FontWeight.w700,
+                    color: AppTheme.textPrimary,
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
-              const Spacer(),
               if (!_isOnline)
                 Padding(
-                  padding: const EdgeInsets.only(right: 12),
+                  padding: const EdgeInsets.only(right: 6),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                     decoration: BoxDecoration(color: Colors.orange.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(6)),
-                    child: const Text('OFFLINE MODE', style: TextStyle(fontSize: 10, color: Colors.orange, fontWeight: FontWeight.bold)),
+                    child: const Text('OFFLINE', style: TextStyle(fontSize: 9, color: Colors.orange, fontWeight: FontWeight.bold)),
                   ),
                 ),
-              TextButton.icon(
-                onPressed: _isAutoFilling ? null : _smartFill,
-                icon: _isAutoFilling 
-                  ? const SizedBox(width: 12, height: 12, child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.greenPrimary))
-                  : const Icon(Icons.auto_fix_high, size: 14, color: AppTheme.greenPrimary),
-                label: const Text('Smart Fill', style: TextStyle(fontSize: 12, color: AppTheme.greenPrimary, fontWeight: FontWeight.bold)),
-                style: TextButton.styleFrom(
-                  backgroundColor: AppTheme.greenPrimary.withValues(alpha: 0.05),
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: const Color(0x0DFFFFFF),
-                  border: Border.all(color: const Color(0x14FFFFFF)),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Text(
-                  'ESP32 DATA',
-                  style: TextStyle(
-                    fontSize: 10, fontWeight: FontWeight.w600,
-                    color: AppTheme.textMuted, letterSpacing: 0.8,
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  TextButton.icon(
+                    onPressed: _isAutoFilling ? null : _smartFill,
+                    icon: _isAutoFilling 
+                      ? const SizedBox(width: 10, height: 10, child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.greenPrimary))
+                      : const Icon(Icons.auto_fix_high, size: 12, color: AppTheme.greenPrimary),
+                    label: const Text('Smart Fill', style: TextStyle(fontSize: 11, color: AppTheme.greenPrimary, fontWeight: FontWeight.bold)),
+                    style: TextButton.styleFrom(
+                      backgroundColor: AppTheme.greenPrimary.withValues(alpha: 0.05),
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
                   ),
-                ),
+                  const SizedBox(height: 4),
+                  InkWell(
+                    onTap: _showESP32ConnectionDialog,
+                    borderRadius: BorderRadius.circular(8),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: AppTheme.greenPrimary.withValues(alpha: 0.1),
+                        border: Border.all(color: AppTheme.greenPrimary.withValues(alpha: 0.2)),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.bluetooth, size: 9, color: AppTheme.greenPrimary),
+                          SizedBox(width: 4),
+                          Text(
+                            'ESP32 DATA',
+                            style: TextStyle(
+                              fontSize: 9, fontWeight: FontWeight.w600,
+                              color: AppTheme.greenPrimary, letterSpacing: 0.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
